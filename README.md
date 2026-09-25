@@ -17,8 +17,25 @@ hedge on the mesh fence, wooden fences, spots where containers stand today, cove
 The sun is computed for the central Netherlands (52.1° N) on the chosen date and Dutch clock time.
 The garden's orientation ("Back fence faces") defaults to **south**, based on the shadows in the photos; change it if that's wrong.
 
-## Editing measurements
+## Measurements
 
-All sizes are estimates from the photos. Coordinates are in metres, with the origin at ground level at the field-side
-corner of the extension's back wall: **X** runs along the house toward the neighbour, **Z** runs from the house toward the
-back fence. Update the `LAYOUT` block at the top of the script in `index.html` with tape-measured values.
+Coordinates are in metres, with the origin at ground level at the field-side corner of the extension's back wall:
+**X** runs along the house toward the neighbour, **Z** runs from the house toward the back fence.
+
+Measured with a tape (in the `LAYOUT` block at the top of the script in `index.html`):
+
+| Extension back wall, left → right | cm |
+|---|---|
+| Corner → grey door | 216 |
+| Grey door (incl. frame) | 104 |
+| Door → glass doors (39 wall + 8 downpipe + 114 wall) | 161 |
+| Glass doors (181.5 fixed + 94.5 + 94.5) | 370 |
+| Glass doors → corner at neighbour fence | 97 |
+
+- Terrace: 11 × 5 tiles of 60 × 60 cm = 660 × 300 cm, laid one tile to the right of the glass doors and ten to the left.
+- Pebble strip between the wall/doors and the tiles: 8 cm.
+- Planting border between the terrace and the neighbour fence: 40 cm.
+
+Still estimated from photos (shown with ≈ in the model): garden depth, lawn, path width, the extension height,
+the house volume, and where furniture and pots stand. Positions that follow from the wall (terrace, path, container
+spots, herb planter) are computed from the measured values, so correcting a number there moves them along.
