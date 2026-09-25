@@ -32,10 +32,12 @@ Measured with a tape (in the `LAYOUT` block at the top of the script in `index.h
 | Glass doors (181.5 fixed + 94.5 + 94.5) | 370 |
 | Glass doors → corner at neighbour fence | 97 |
 
-- Terrace: 11 × 5 tiles of 60 × 60 cm = 660 × 300 cm, laid one tile to the right of the glass doors and ten to the left.
+- Terrace: 12 × 5 tiles of 60 × 60 cm = 720 × 300 cm, laid one tile to the right of the glass doors and eleven to the left.
 - Pebble strip between the wall/doors and the tiles: 8 cm.
 - Planting border between the terrace and the neighbour fence: 40 cm.
+- Path: starts 22 cm in from the terrace's field-side corner and runs straight to the gate.
+- Mesh fence + hedge on the field side: 23 cm outside the house corner.
 
-Still estimated from photos (shown with ≈ in the model): garden depth, lawn, path width, the extension height,
+Still estimated from photos (shown with ≈ in the model): garden depth, lawn, path width (≈1.10 m), the extension height,
 the house volume, and where furniture and pots stand. Positions that follow from the wall (terrace, path, container
 spots, herb planter) are computed from the measured values, so correcting a number there moves them along.
