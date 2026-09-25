@@ -295,8 +295,19 @@ const LAYOUT = (() => {
   terrace.z1 = terrace.z0 + terrace.tilesZ * tile;                                 // 3.08
 
   const width = terrace.x1 + fenceBorder;   // neighbour fence line (9.51; the wall sum gives 9.48)
-  const depth = 9.0;                        // est. house wall → back fence
   const fieldX = -fieldGap;                 // field-side fence line
+
+  // Wooden fences: 10 cm concrete posts, boards 14.5 cm with 5 cm gaps (double-sided, staggered).
+  // Boards per section counted from photos. A section of n boards is n × 14.5 + (n − 1) × 5 cm.
+  // Gate opening ≈1.40 m: not measured, worked out from the post positions in the photo.
+  const fence = { post: 0.10, board: 0.145, gap: 0.05, gate: 1.40 };
+  fence.panel = (n) => n * fence.board + (n - 1) * fence.gap;
+  fence.neighbour = [12, 10, 10, 10];        // house → back corner
+  // Field-side corner → neighbour corner. The last section (behind the hutch) runs out of the photo and is not
+  // counted yet; it fills the rest of the width set by the house measurements (≈1.51 m, about 8 boards).
+  fence.back = [11, 'gate', 12, 10, 'rest'];
+  // The garden depth follows from the neighbour fence: posts + sections, to the centre of the corner post
+  const depth = fence.neighbour.reduce((z, n) => z + fence.post + fence.panel(n), 0) + fence.post / 2;   // ≈ 8.44
   const path = { x0: terrace.x0 + pathInset, z0: terrace.z1, z1: depth };
   path.x1 = path.x0 + pathWidth;
   const lineDrain = { x0: path.x1, x1: terrace.x1, z0: terrace.z1, z1: terrace.z1 + drain };
@@ -308,28 +319,30 @@ const LAYOUT = (() => {
   const binArea = { x1: path.x0, z0: depth - 1.30, z1: depth, tiles: binTiles, tileDepth: tile, edge: binEdge };
   binArea.x0 = binArea.x1 - binTiles * tile - binEdge;                               // 1.88 m wide
 
-  return {
-    width, depth, fieldX, fenceHeight: 1.8, tile, pebbleGap, pathInset, fieldGap, wall, pipeX, lineDrain, binArea,
+  const L_ = {
+    width, depth, fieldX, fence, fenceHeight: 1.8, tile, pebbleGap, pathInset, fieldGap, wall, pipeX, lineDrain, binArea,
     extension: { x0: 0, x1: extWidth, z0: -3.2, z1: 0, h: 3.2 },     // height est.
     sideWing:  { x0: 0, x1: 3.1, z0: -10.5, z1: -3.2, h: 3.2 },
     house:     { x0: 3.1, x1: extWidth, z0: -12.2, z1: -3.2, eaves: 5.9, ridge: 10.0 },
     greyDoor, slideDoor, terrace, path, lawn,
     border:    { x0: terrace.x1, x1: width, z0: 0, z1: terrace.z1 },
     bed:       { x0: fieldX, x1: path.x0, z0: 0, z1: depth },        // planting strip along the field fence
-    gate:      { x0: path.x0, x1: path.x1 },                         // gate lines up with the path
+    gate:      { x0: fieldX + 2 * fence.post + fence.panel(fence.back[0]) },   // after the corner post, 11 boards and the gate post
 
     // Spots where plant pots stand today (for planning what goes where)
     zones: [
       { name: 'Pots by side door',       x0: 0.95, x1: greyDoor.x0 - 0.05, z0: 0.1, z1: 0.95 },
       { name: 'Herb planter',            x0: pipeX + 0.1, x1: slideDoor.x0 - 0.02, z0: terrace.z0, z1: 1.0 },
       { name: 'Olive tree',              x0: 5.65, x1: 6.65, z0: 2.15, z1: 2.95 },
-      { name: 'Strawberries & veg pots', x0: path.x0 - 0.8, x1: path.x0, z0: 3.3, z1: 6.7 },
-      { name: 'Pots & paver stack',      x0: path.x0 - 0.9, x1: path.x0, z0: 6.8, z1: binArea.z0 - 0.02 },
-      { name: 'Compost bin & flowers',   x0: fieldX + 0.45, x1: path.x0 - 0.95, z0: 6.75, z1: binArea.z0 - 0.02 },
+      { name: 'Strawberries & veg pots', x0: path.x0 - 0.8, x1: path.x0, z0: 3.3, z1: binArea.z0 - 0.95 },
+      { name: 'Pots & paver stack',      x0: path.x0 - 0.9, x1: path.x0, z0: binArea.z0 - 0.88, z1: binArea.z0 - 0.02 },
+      { name: 'Compost bin & flowers',   x0: fieldX + 0.45, x1: path.x0 - 0.95, z0: binArea.z0 - 0.9, z1: binArea.z0 - 0.02 },
       { name: 'Sunflowers by the hedge', x0: fieldX + 0.3, x1: binArea.x0, z0: binArea.z0 + 0.02, z1: depth - 0.05 },
       { name: 'Planter at terrace corner', x0: terrace.x1 - 0.6, x1: terrace.x1, z0: terrace.z1 - 0.6, z1: terrace.z1 },
     ],
   };
+  L_.gate.x1 = L_.gate.x0 + fence.gate;
+  return L_;
 })();
 
 /* ---------------------------------------------------------------- setup */
@@ -427,14 +440,17 @@ const T = {
   grass: () => canvasTex('grass', 256, 1.5, 1.5, (g, w, h) => speckle(g, w, h, '#5e8f37', ['#6ea042', '#548530', '#7aad4c', '#4d7c2b'], 2600, 3)),
   soil: () => canvasTex('soil', 256, 1.5, 1.5, (g, w, h) => speckle(g, w, h, '#5a4938', ['#4b3c2e', '#6a5642', '#3f332a', '#6f6049'], 2200, 3)),
   hedge: () => canvasTex('hedge', 256, 1, 1, (g, w, h) => speckle(g, w, h, '#3d6a2c', ['#4d7d35', '#2f5623', '#5c8c3f', '#27481d', '#6a9a48'], 3000, 6)),
-  wood: () => canvasTex('wood', 512, 1.12, 1.0, (g, w, h) => {
+  wood: () => canvasTex('wood', 585, 1.17, 1.0, (g, w, h) => {
+    // 6 × (14.5 cm board + 5 cm gap); the gap shows the darker board on the other side
     const cols = ['#a4937c', '#998871', '#ad9d87', '#9e8e78', '#b3a48e'];
-    const bw = w / 8;
-    for (let i = 0; i < 8; i++) {
-      g.fillStyle = pick(cols); g.fillRect(i * bw, 0, bw, h);
+    const pitch = w / 6, bw = pitch * 0.145 / 0.195;
+    g.fillStyle = '#7a5f45'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 6; i++) {
+      const x0 = i * pitch;
+      g.fillStyle = pick(cols); g.fillRect(x0, 0, bw, h);
       g.strokeStyle = 'rgba(70,55,40,0.18)';
-      for (let k = 0; k < 6; k++) { const x = i * bw + rand() * bw; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (rand() - .5) * 6, h); g.stroke(); }
-      g.fillStyle = '#6d604f'; g.fillRect(i * bw, 0, 2, h);
+      for (let k = 0; k < 5; k++) { const x = x0 + rand() * bw; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (rand() - .5) * 6, h); g.stroke(); }
+      g.fillStyle = 'rgba(40,30,20,0.35)'; g.fillRect(x0 + bw, 0, 3, h);        // shadow beside the board
     }
   }),
   roof: () => canvasTex('roof', 256, 0.6, 0.6, (g, w, h) => {
@@ -520,6 +536,7 @@ const M = {
   concrete: mat('#7a7b77'),
   darkMetal: mat('#262a28', { roughness: 0.5, metalness: 0.3 }),
   galv: mat('#9aa09d', { roughness: 0.45, metalness: 0.6 }),
+  rail: mat('#a3a39e', { roughness: 0.5, metalness: 0.3 }),
   steel: mat('#c9ced0', { roughness: 0.25, metalness: 0.8 }),
   cover: mat('#1d1e20', { roughness: 0.55 }),
   terracotta: mat('#b5633c'),
@@ -700,10 +717,51 @@ function fence(parent, name, a, b, { gate = null } = {}) {
   }
   return g;
 }
+// Fence built section by section from the counted boards: concrete post, panel, post, …
+function boardFence(parent, name, { axis, at, start, end, sections }) {
+  const F = L.fence;
+  const lens = sections.map((n) => (n === 'gate' ? F.gate : n === 'rest' ? null : F.panel(n)));
+  const fixed = lens.reduce((a, v) => a + (v ?? 0), 0) + F.post * (sections.length + 1);
+  const restLen = end === undefined ? 0 : end - start - fixed;
+  if (end === undefined) end = start + fixed;
+  const counts = sections.map((n) => (n === 'gate' ? `gate ≈${fmt(F.gate * 100)} cm` : n === 'rest' ? `not counted yet, ≈${fmt(restLen * 100)} cm` : `${n} boards (${fmt(F.panel(n) * 100)} cm)`));
+  const g = item(parent, name, `Concrete posts (10 cm) with wooden sections of 14.5 cm boards and 5 cm gaps. Sections: ${counts.join(' · ')}. Total ${m2(end - start)} m.`);
+  const seg = (grp, u0, u1, y0, y1, material, thick) => axis === 'x'
+    ? box(grp, u0, u1, y0, y1, at - thick / 2, at + thick / 2, material)
+    : box(grp, at - thick / 2, at + thick / 2, y0, y1, u0, u1, material);
+  const post = (u) => {
+    seg(g, u, u + F.post, 0, FH + 0.06, M.concrete, F.post);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(F.post * 0.72, 0.09, 4), M.concrete);
+    cap.rotation.y = Math.PI / 4; cap.castShadow = true;
+    const c = u + F.post / 2;
+    cap.position.set(axis === 'x' ? c : at, FH + 0.105, axis === 'x' ? at : c);
+    g.add(cap);
+  };
+  let u = start;
+  post(u); u += F.post;
+  sections.forEach((n, i) => {
+    const len = lens[i] ?? restLen;
+    if (n === 'gate') {
+      const gg = item(g, 'Back gate', `Wooden gate of 7 boards in a steel frame. Opening ≈${m2(len)} m (from the photo, not measured), lined up with the path.`);
+      seg(gg, u + 0.03, u + len - 0.03, 0.04, FH - 0.02, M.wood, 0.05);
+      seg(gg, u + 0.02, u + len - 0.02, FH - 0.05, FH, M.galv, 0.06);
+      seg(gg, u + 0.02, u + 0.06, 0.04, FH, M.galv, 0.06);
+      seg(gg, u + len - 0.06, u + len - 0.02, 0.04, FH, M.galv, 0.06);
+      seg(gg, u + 0.1, u + 0.2, 1.0, 1.05, M.white, 0.12);                          // handle
+    } else {
+      seg(g, u, u + len, 0.25, FH - 0.03, M.wood, 0.045);
+      seg(g, u, u + len, 0, 0.25, M.concrete, 0.05);                                // concrete base plank
+      seg(g, u, u + len, FH - 0.03, FH, M.rail, 0.06);                              // top rail
+    }
+    u += len;
+    post(u); u += F.post;
+  });
+  return g;
+}
 {
-  const s = G.structure;
-  fence(s, 'Neighbour fence', [L.width, 0], [L.width, L.depth]);
-  fence(s, 'Back fence', [L.fieldX, L.depth], [L.width, L.depth], { gate: [L.gate.x0, L.gate.x1] });
+  const s = G.structure, F = L.fence;
+  boardFence(s, 'Neighbour fence', { axis: 'z', at: L.width, start: 0, sections: F.neighbour });
+  boardFence(s, 'Back fence', { axis: 'x', at: L.depth, start: L.fieldX, end: L.width + F.post / 2, sections: F.back });
 
   // field side: black steel mesh fence with a green screen hedge grown into it
   const fx = L.fieldX;
@@ -765,7 +823,7 @@ function sunflower(parent, x, z, h, base = 0) {
   pot(olive, 5.9, 2.5, 0.19, 0.42, M.potCream, { plant: null });
 
   const veg = item(s, Z[3].name, 'Rows of terracotta pots and black grow bags with strawberries, chard and herbs along the path.');
-  for (let z = 3.5; z < 6.6; z += 0.42) {
+  for (let z = 3.5; z < Z[3].z1 - 0.1; z += 0.42) {
     const black = Math.floor(z * 2) % 3 === 0;
     pot(veg, pa.x0 - 0.25, z, 0.18, black ? 0.3 : 0.26, black ? M.potBlack : M.terracotta, { plant: 'leafy', plantH: 0.3 });
     if (z > 4.2) pot(veg, pa.x0 - 0.62, z + 0.2, 0.16, 0.25, pick([M.potBlack, M.terracotta]), { plant: pick(['leafy', 'flower']), plantH: 0.28 });
@@ -773,13 +831,14 @@ function sunflower(parent, x, z, h, base = 0) {
 
   const ba = L.binArea;
   const binPots = item(s, Z[4].name, 'Terracotta and black pots, a stack of concrete pavers and a slab with pots, between the strawberries and the bins.');
-  pot(binPots, pa.x0 - 0.25, 7.45, 0.17, 0.26, M.terracotta, { plant: 'tall', plantH: 0.6 });
-  pot(binPots, pa.x0 - 0.55, 7.5, 0.18, 0.28, M.potBlack, { plant: 'tall', plantH: 0.7 });
-  pot(binPots, pa.x0 - 0.3, 7.1, 0.15, 0.22, M.terracotta);
-  box(binPots, pa.x0 - 0.88, pa.x0 - 0.5, 0.02, 0.26, 7.02, 7.3, mat('#b9b2a4'));            // stacked pavers
-  box(binPots, pa.x0 - 0.8, pa.x0 - 0.35, 0.02, 0.07, 6.8, 6.98, mat('#c4c0b7'));            // slab
-  pot(binPots, pa.x0 - 0.68, 6.88, 0.09, 0.14, M.potBlack, { plant: 'flower', plantH: 0.3 });
-  pot(binPots, pa.x0 - 0.47, 6.88, 0.08, 0.13, M.potBlack);
+  const bz = ba.z0;                                                                    // front edge of the bin area
+  pot(binPots, pa.x0 - 0.25, bz - 0.25, 0.17, 0.26, M.terracotta, { plant: 'tall', plantH: 0.6 });
+  pot(binPots, pa.x0 - 0.55, bz - 0.2, 0.18, 0.28, M.potBlack, { plant: 'tall', plantH: 0.7 });
+  pot(binPots, pa.x0 - 0.3, bz - 0.6, 0.15, 0.22, M.terracotta);
+  box(binPots, pa.x0 - 0.88, pa.x0 - 0.5, 0.02, 0.26, bz - 0.68, bz - 0.4, mat('#b9b2a4'));    // stacked pavers
+  box(binPots, pa.x0 - 0.8, pa.x0 - 0.35, 0.02, 0.07, bz - 0.88, bz - 0.7, mat('#c4c0b7'));    // slab
+  pot(binPots, pa.x0 - 0.68, bz - 0.79, 0.09, 0.14, M.potBlack, { plant: 'flower', plantH: 0.3 });
+  pot(binPots, pa.x0 - 0.47, bz - 0.79, 0.08, 0.13, M.potBlack);
 
   const compost = item(s, Z[5].name, 'Black compost bin with sunflowers and other flowers growing out of it, surrounded by rudbeckia and agastache.');
   const cx = (Z[5].x0 + Z[5].x1) / 2, cz = (Z[5].z0 + Z[5].z1) / 2;
@@ -793,7 +852,7 @@ function sunflower(parent, x, z, h, base = 0) {
   }
 
   const sun = item(s, Z[6].name, 'Tall sunflowers (≈2.8 m) in the strip between the bin area and the ivy hedge.');
-  for (const [x, z, h] of [[0.2, 8.55, 2.8], [0.18, 8.05, 2.5], [0.22, 7.8, 2.3]]) sunflower(sun, x, z, h);
+  for (const [x, z, h] of [[0.2, D - 0.45, 2.8], [0.18, D - 0.8, 2.5], [0.22, D - 1.1, 2.3]]) sunflower(sun, x, z, h);
 
   const fp = item(s, Z[7].name, 'Black square planter (≈42 cm) with violas and lemon balm on the last tile by the border.');
   box(fp, t.x1 - 0.57, t.x1 - 0.15, 0.05, 0.47, t.z1 - 0.5, t.z1 - 0.08, M.potBlack);
@@ -904,7 +963,7 @@ function dimLine(parent, a, b, text, tickDir) {
   dimLine(s, [L.fieldX, 0.08, L.depth + 0.5], [L.width, 0.08, L.depth + 0.5], `${m2(L.width - L.fieldX)} m`, [0, 0, 1]);
   dimLine(s, [t.x0, 0.1, t.z1 + 0.12], [p.x0, 0.1, t.z1 + 0.12], `${m2(L.pathInset)}`, [0, 0, 1]);
   dimLine(s, [L.fieldX, 0.1, -0.12], [0, 0.1, -0.12], `${m2(L.fieldGap)}`, [0, 0, 1]);
-  dimLine(s, [L.width + 0.5, 0.08, 0], [L.width + 0.5, 0.08, L.depth], `≈${m2(L.depth)} m`, [1, 0, 0]);
+  dimLine(s, [L.width + 0.5, 0.08, 0], [L.width + 0.5, 0.08, L.depth], `${m2(L.depth)} m (from fence count)`, [1, 0, 0]);
   dimLine(s, [L.width + 0.15, 0, 0.15], [L.width + 0.15, e.h, 0.15], `wall ≈${m2(e.h)} m`, [1, 0, 0]);
 }
 
@@ -1035,8 +1094,8 @@ function updateSun() {
 /* ============================================================ VIEWS */
 const VIEWS = {
   overview: { pos: [12, 15, 15], target: [4.2, 0, 4.0], fov: 50 },
-  plan:     { pos: [4.8, 27, 4.31], target: [4.8, 0, 4.3], fov: 45 },
-  lawn:     { pos: [5.3, 1.65, 8.4], target: [5.3, 1.6, 0], fov: 75 },
+  plan:     { pos: [4.8, 26, 4.01], target: [4.8, 0, 4.0], fov: 45 },
+  lawn:     { pos: [5.3, 1.65, L.depth - 0.5], target: [5.3, 1.6, 0], fov: 75 },
   terrace:  { pos: [(L.path.x0 + L.path.x1) / 2, 1.6, 1.2], target: [(L.path.x0 + L.path.x1) / 2, 0.9, 9], fov: 70 },
   bins:     { pos: [3.1, 2.3, 5.6], target: [0.5, 0.4, 8.4], fov: 70 },
   corner:   { pos: [8.9, 1.6, 4.6], target: [1.2, 1.0, 7.8], fov: 75 },

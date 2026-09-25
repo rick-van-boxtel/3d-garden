@@ -41,7 +41,14 @@ Measured with a tape (in the `LAYOUT` block at the top of the script in `index.h
   plus one row of 8 cm stones to finish the paving. 1.30 m deep from the back fence to the flower bed.
   Across from the bins: pots, a stack of pavers and a compost bin with sunflowers growing out of it.
 - Mesh fence + hedge on the field side: 23 cm outside the house corner.
+- Wooden fences: 10 cm concrete posts, 14.5 cm boards, 5 cm gaps, so a section of n boards is n × 14.5 + (n − 1) × 5 cm.
+  Boards counted from photos (checked against the post positions in perspective):
+  - Neighbour fence, house → back corner: 12 · 10 · 10 · 10 boards = 8.49 m including 5 posts.
+    This sets the garden depth: 8.44 m from the house wall to the middle of the back fence.
+  - Back fence, field corner → neighbour corner: 11 boards (behind the bins) · gate ≈1.40 m · 12 · 10 · last section.
+    The last section (behind the hutch) is not counted yet. The house-side measurements leave ≈1.51 m for it
+    (8 boards), but the photo shows at least 10 boards there, which would make the back fence ≈40 cm wider.
 
-Still estimated from photos (shown with ≈ in the model): garden depth, lawn depth, the extension height,
+Still estimated from photos (shown with ≈ in the model): the gate opening, the extension height,
 the house volume, and where furniture and pots stand. Positions that follow from the wall (terrace, path, container
 and bin area, pot spots, herb planter) are computed from the measured values, so correcting a number there moves them along.
