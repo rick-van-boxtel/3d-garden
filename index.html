@@ -301,9 +301,12 @@ const LAYOUT = (() => {
   path.x1 = path.x0 + pathWidth;
   const lineDrain = { x0: path.x1, x1: terrace.x1, z0: terrace.z1, z1: terrace.z1 + drain };
   const lawn = { x0: path.x1, x1: width - 0.2, z0: lineDrain.z1 + drainKerb, z1: depth - 0.2 };
-  // Bin area beside the gate: from the back fence 60 cm of white ceramic tiles (three bins stand on them),
-  // one row of 8 cm stones around the tiles, then pavers: 1.30 m deep in total and 1.68 m wide toward the ivy hedge
-  const binArea = { x0: path.x0 - 1.68, x1: path.x0, z0: depth - 1.30, z1: depth, tileDepth: 0.60, edge: 0.08 };
+  // Bin area beside the gate: three 60 × 60 cm white ceramic tiles along the back fence (one bin on each),
+  // plus one row of 8 cm stones to finish the paving = 1.88 m from the path toward the ivy hedge.
+  // From the back fence: the tiles, the 8 cm row, then pavers up to the flower bed (1.30 m in total).
+  const binTiles = 3, binEdge = 0.08;
+  const binArea = { x1: path.x0, z0: depth - 1.30, z1: depth, tiles: binTiles, tileDepth: tile, edge: binEdge };
+  binArea.x0 = binArea.x1 - binTiles * tile - binEdge;                               // 1.88 m wide
 
   return {
     width, depth, fieldX, fenceHeight: 1.8, tile, pebbleGap, pathInset, fieldGap, wall, pipeX, lineDrain, binArea,
@@ -323,7 +326,7 @@ const LAYOUT = (() => {
       { name: 'Strawberries & veg pots', x0: path.x0 - 0.8, x1: path.x0, z0: 3.3, z1: 6.7 },
       { name: 'Pots & paver stack',      x0: path.x0 - 0.9, x1: path.x0, z0: 6.8, z1: binArea.z0 - 0.02 },
       { name: 'Compost bin & flowers',   x0: fieldX + 0.45, x1: path.x0 - 0.95, z0: 6.75, z1: binArea.z0 - 0.02 },
-      { name: 'Sunflowers by the hedge', x0: fieldX + 0.44, x1: binArea.x0, z0: binArea.z0 + 0.02, z1: depth - 0.05 },
+      { name: 'Sunflowers by the hedge', x0: fieldX + 0.3, x1: binArea.x0, z0: binArea.z0 + 0.02, z1: depth - 0.05 },
       { name: 'Planter at terrace corner', x0: terrace.x1 - 0.6, x1: terrace.x1, z0: terrace.z1 - 0.6, z1: terrace.z1 },
     ],
   };
@@ -564,12 +567,12 @@ const FH = L.fenceHeight;
   box(pebbles, t.x0, t.x1, 0, 0.042, 0, t.z0, M.gravel, { cast: false });
   const path = item(s, 'Garden path', `Dark clinker pavers from the side door past the terrace to the back gate, ${m2(p.x1 - p.x0)} m wide (measured).`);
   box(path, p.x0, p.x1, 0, 0.045, p.z0, p.z1, M.pavers, { cast: false });
-  const binArea = item(s, 'Bin area', `Paved area for the three bins beside the gate: ${m2(ba.x1 - ba.x0)} m wide, ${m2(ba.z1 - ba.z0)} m deep. White ceramic tiles (${fmt(ba.tileDepth * 100)} cm) under the bins, one row of ${fmt(ba.edge * 100)} cm stones around them, pavers in front (measured).`);
+  const binArea = item(s, 'Bin area', `Paved area for the three bins beside the gate: ${m2(ba.x1 - ba.x0)} m wide (${ba.tiles} white ceramic tiles of 60 × 60 cm + one row of ${fmt(ba.edge * 100)} cm stones), ${m2(ba.z1 - ba.z0)} m deep to the flower bed (measured).`);
   const tz0 = ba.z1 - ba.tileDepth;
   box(binArea, ba.x0, ba.x1, 0, 0.045, ba.z0, ba.z1, M.pavers, { cast: false });
   box(binArea, ba.x0, ba.x1, 0, 0.047, tz0 - ba.edge, tz0, M.edgeStone, { cast: false });              // 8 cm stones in front of the tiles
   box(binArea, ba.x0, ba.x0 + ba.edge, 0, 0.047, tz0 - ba.edge, ba.z1, M.edgeStone, { cast: false });  // and at the hedge end
-  box(binArea, ba.x0 + ba.edge, ba.x1, 0, 0.049, tz0, ba.z1, M.whiteTiles, { cast: false });
+  box(binArea, ba.x1 - ba.tiles * ba.tileDepth, ba.x1, 0, 0.049, tz0, ba.z1, M.whiteTiles, { cast: false });
   const lawn = item(s, 'Lawn', 'Grass, with a narrow border strip along the fences (depth still estimated).');
   box(lawn, ln.x0, ln.x1, 0, 0.035, ln.z0, ln.z1, M.grass, { cast: false });
   const bed = item(s, 'Planting bed', 'Soil strip along the field-side fence with the hedge, pots and sunflowers.');
@@ -790,7 +793,7 @@ function sunflower(parent, x, z, h, base = 0) {
   }
 
   const sun = item(s, Z[6].name, 'Tall sunflowers (≈2.8 m) in the strip between the bin area and the ivy hedge.');
-  for (const [x, z, h] of [[0.32, 8.55, 2.8], [0.3, 8.05, 2.5], [0.36, 7.8, 2.3]]) sunflower(sun, x, z, h);
+  for (const [x, z, h] of [[0.2, 8.55, 2.8], [0.18, 8.05, 2.5], [0.22, 7.8, 2.3]]) sunflower(sun, x, z, h);
 
   const fp = item(s, Z[7].name, 'Black square planter (≈42 cm) with violas and lemon balm on the last tile by the border.');
   box(fp, t.x1 - 0.57, t.x1 - 0.15, 0.05, 0.47, t.z1 - 0.5, t.z1 - 0.08, M.potBlack);
@@ -836,13 +839,13 @@ function sunflower(parent, x, z, h, base = 0) {
   box(hutch, hx0, hx1, 0.3, 0.95, D - 0.85, D - 0.2, mat('#d9d8d2'));
   box(hutch, hx0 - 0.05, hx1 + 0.05, 0.95, 1.02, D - 0.9, D - 0.15, mat('#555a5c'));
   for (const [x, z] of [[hx0 + 0.05, D - 0.8], [hx1 - 0.05, D - 0.8], [hx0 + 0.05, D - 0.25], [hx1 - 0.05, D - 0.25]]) box(hutch, x - 0.03, x + 0.03, 0, 0.3, z - 0.03, z + 0.03, mat('#d9d8d2'));
-  const bins = item(s, 'Wheelie bins', 'Three bins in a row on the white tiles: green (organic), green with a blue lid (paper) and black (rest). About 0.5 × 0.6 m each.');
+  const bins = item(s, 'Wheelie bins', 'Three bins, one on each 60 × 60 cm tile: green (organic), green with a blue lid (paper) and black (rest).');
   const green = mat('#2f6b3a', { roughness: 0.6 }), black = mat('#252525', { roughness: 0.6 });
   [[green, '#3f6a47'], [green, '#2f6fb3'], [black, '#2c2c2c']].forEach(([body, lid], i) => {
-    const x1 = ba.x1 - 0.03 - i * 0.53;
-    box(bins, x1 - 0.5, x1, 0.05, 1.0, D - 0.6, D - 0.05, body);
-    box(bins, x1 - 0.52, x1 + 0.01, 1.0, 1.07, D - 0.64, D - 0.04, mat(lid, { roughness: 0.6 }));
-    cyl(bins, x1 - 0.25, D - 0.62, 0.1, 0.05, 0.25, black, { seg: 12 }).rotation.z = Math.PI / 2;   // wheels
+    const cx = ba.x1 - ba.tileDepth * (i + 0.5);                // centred on its tile
+    box(bins, cx - 0.28, cx + 0.28, 0.05, 1.0, D - 0.62, D - 0.05, body);
+    box(bins, cx - 0.29, cx + 0.29, 1.0, 1.07, D - 0.66, D - 0.04, mat(lid, { roughness: 0.6 }));
+    cyl(bins, cx, D - 0.64, 0.1, 0.05, 0.25, black, { seg: 12 }).rotation.z = Math.PI / 2;   // wheels
   });
   const reel = item(s, 'Hose reel', 'Wall-mounted hose reel near the extension corner.');
   const r = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 20), M.darkMetal);

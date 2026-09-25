@@ -37,8 +37,8 @@ Measured with a tape (in the `LAYOUT` block at the top of the script in `index.h
 - Planting border between the terrace and the neighbour fence: 40 cm.
 - Line drain: 6 cm stainless steel, against the uncut outer row of tiles along the lawn.
 - Path: 1.20 m wide from the side door to the gate, starting 22 cm in from the terrace's field-side corner.
-- Bin area beside the gate: 1.68 m wide (path → ivy hedge) and 1.30 m deep from the back fence.
-  Three bins stand on a 60 cm row of white ceramic tiles, surrounded by one row of 8 cm stones, with pavers in front.
+- Bin area beside the gate: 1.88 m wide (path → ivy hedge): three 60 × 60 cm white ceramic tiles, one bin on each,
+  plus one row of 8 cm stones to finish the paving. 1.30 m deep from the back fence to the flower bed.
   Across from the bins: pots, a stack of pavers and a compost bin with sunflowers growing out of it.
 - Mesh fence + hedge on the field side: 23 cm outside the house corner.
 
