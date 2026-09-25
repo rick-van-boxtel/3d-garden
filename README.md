@@ -35,9 +35,12 @@ Measured with a tape (in the `LAYOUT` block at the top of the script in `index.h
 - Terrace: 12 × 5 tiles of 60 × 60 cm = 720 × 300 cm, laid one tile to the right of the glass doors and eleven to the left.
 - Pebble strip between the wall/doors and the tiles: 8 cm.
 - Planting border between the terrace and the neighbour fence: 40 cm.
-- Path: starts 22 cm in from the terrace's field-side corner and runs straight to the gate.
+- Line drain: 6 cm stainless steel, against the uncut outer row of tiles along the lawn.
+- Path: 1.20 m wide from the side door to the gate, starting 22 cm in from the terrace's field-side corner.
+- Bin area beside the gate: 1.68 m wide (path → ivy hedge) and 1.30 m deep from the back fence
+  (60 cm ceramic tiles under the bins + 70 cm pavers).
 - Mesh fence + hedge on the field side: 23 cm outside the house corner.
 
-Still estimated from photos (shown with ≈ in the model): garden depth, lawn, path width (≈1.10 m), the extension height,
+Still estimated from photos (shown with ≈ in the model): garden depth, lawn depth, the extension height,
 the house volume, and where furniture and pots stand. Positions that follow from the wall (terrace, path, container
-spots, herb planter) are computed from the measured values, so correcting a number there moves them along.
+and bin area, pot spots, herb planter) are computed from the measured values, so correcting a number there moves them along.

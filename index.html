@@ -223,7 +223,7 @@
       <h2 id="h-show">Show</h2>
       <div class="toggles">
         <label><input type="checkbox" id="t-labels" checked> Measurements</label>
-        <label><input type="checkbox" id="t-zones" checked> Container spots</label>
+        <label><input type="checkbox" id="t-zones" checked> Pot spots</label>
         <label><input type="checkbox" id="t-plants" checked> Pots &amp; plants</label>
         <label><input type="checkbox" id="t-furniture" checked> Furniture</label>
         <label><input type="checkbox" id="t-context"  checked> Surroundings</label>
@@ -240,7 +240,7 @@
 
     <button type="button" id="export" hidden>Download .glb for Blender</button>
 
-    <p class="foot">Measured: the extension wall, doors, terrace (12 × 5 tiles), pebble strip, fence border, path position and hedge gap. Values marked ≈ are still estimated from photos. Update them in the <code>LAYOUT</code> block in <code>index.html</code>.</p>
+    <p class="foot">Measured: the extension wall, doors, terrace (12 × 5 tiles), pebble strip, drain, fence border, path, bin area and hedge gap. Values marked ≈ are still estimated from photos. Update them in the <code>LAYOUT</code> block in <code>index.html</code>.</p>
   </aside>
   <div id="loading">Loading model…</div>
 </div>
@@ -259,7 +259,8 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
    MEASURED with a tape: the extension's back wall (doors, downpipe, glass
    doors), the terrace (12 × 5 tiles), the pebble strip, the fence border,
-   the path's offset from the terrace corner and the hedge's gap to the house.
+   the path (22 cm in from the terrace corner, 1.20 m wide), the 6 cm line
+   drain, the bin area and the hedge's gap to the house.
    ESTIMATED from photos: garden depth, lawn, path width, heights, the house
    volume and where furniture and pots stand.
    ========================================================================== */
@@ -278,6 +279,9 @@ const LAYOUT = (() => {
   const fenceBorder = 0.40;        // planting strip between the terrace and the neighbour fence
   const fieldGap = 0.23;           // mesh fence + hedge stand 23 cm outside the house corner
   const pathInset = 0.22;          // path starts 22 cm in from the terrace's field-side corner
+  const pathWidth = 1.20;          // side door → gate
+  const drain = 0.06;              // stainless line drain against the (uncut) outer row of tiles
+  const drainKerb = 0.05;          // concrete edge behind the drain, est. from photo
 
   const greyDoor = { x0: wall.toDoor, x1: wall.toDoor + wall.door, h: 2.33 };
   const pipeX = greyDoor.x1 + wall.pipeOffset + wall.pipeWidth / 2;
@@ -294,29 +298,32 @@ const LAYOUT = (() => {
   const depth = 9.0;                        // est. house wall → back fence
   const fieldX = -fieldGap;                 // field-side fence line
   const path = { x0: terrace.x0 + pathInset, z0: terrace.z1, z1: depth };
-  path.x1 = path.x0 + 1.1;                  // width est. from photo (≈1.10 m, same as the gate)
-  const lawn = { x0: path.x1, x1: width - 0.2, z0: terrace.z1, z1: depth - 0.2 };
+  path.x1 = path.x0 + pathWidth;
+  const lineDrain = { x0: path.x1, x1: terrace.x1, z0: terrace.z1, z1: terrace.z1 + drain };
+  const lawn = { x0: path.x1, x1: width - 0.2, z0: lineDrain.z1 + drainKerb, z1: depth - 0.2 };
+  // Bin area beside the gate: from the back fence 60 cm of ceramic tiles (under the bins) + 70 cm of pavers,
+  // and 1.68 m wide from the path toward the ivy hedge
+  const binArea = { x0: path.x0 - 1.68, x1: path.x0, z0: depth - 1.30, z1: depth, tileDepth: 0.60, tiles: 2 };
 
   return {
-    width, depth, fieldX, fenceHeight: 1.8, tile, pebbleGap, pathInset, fieldGap, wall, pipeX,
+    width, depth, fieldX, fenceHeight: 1.8, tile, pebbleGap, pathInset, fieldGap, wall, pipeX, lineDrain, binArea,
     extension: { x0: 0, x1: extWidth, z0: -3.2, z1: 0, h: 3.2 },     // height est.
     sideWing:  { x0: 0, x1: 3.1, z0: -10.5, z1: -3.2, h: 3.2 },
     house:     { x0: 3.1, x1: extWidth, z0: -12.2, z1: -3.2, eaves: 5.9, ridge: 10.0 },
     greyDoor, slideDoor, terrace, path, lawn,
     border:    { x0: terrace.x1, x1: width, z0: 0, z1: terrace.z1 },
     bed:       { x0: fieldX, x1: path.x0, z0: 0, z1: depth },        // planting strip along the field fence
-    binPad:    { x0: path.x0 - 1.2, x1: path.x0, z0: depth - 0.95, z1: depth },
     gate:      { x0: path.x0, x1: path.x1 },                         // gate lines up with the path
 
-    // Spots where containers stand today (for planning what goes where)
+    // Spots where plant pots stand today (for planning what goes where)
     zones: [
       { name: 'Pots by side door',       x0: 0.95, x1: greyDoor.x0 - 0.05, z0: 0.1, z1: 0.95 },
       { name: 'Herb planter',            x0: pipeX + 0.1, x1: slideDoor.x0 - 0.02, z0: terrace.z0, z1: 1.0 },
       { name: 'Olive tree',              x0: 5.65, x1: 6.65, z0: 2.15, z1: 2.95 },
       { name: 'Strawberries & veg pots', x0: path.x0 - 0.8, x1: path.x0, z0: 3.3, z1: 6.7 },
-      { name: 'Pots by the bins',        x0: path.x0 - 1.2, x1: path.x0, z0: 7.2, z1: 7.95 },
-      { name: 'Sunflower corner',        x0: fieldX + 0.08, x1: 0.85, z0: 7.5, z1: depth - 0.1 },
-      { name: 'Planter in fence border', x0: terrace.x1 + 0.03, x1: width - 0.04, z0: 2.3, z1: 2.95 },
+      { name: 'Pots by the bins',        x0: binArea.x0 + 0.05, x1: binArea.x0 + 0.95, z0: binArea.z0 + 0.05, z1: binArea.z0 + 0.65 },
+      { name: 'Sunflower corner',        x0: fieldX + 0.08, x1: binArea.x0, z0: 6.9, z1: depth - 0.1 },
+      { name: 'Planter at terrace corner', x0: terrace.x1 - 0.6, x1: terrace.x1, z0: terrace.z1 - 0.6, z1: terrace.z1 },
     ],
   };
 })();
@@ -503,6 +510,7 @@ const M = {
   concrete: mat('#7a7b77'),
   darkMetal: mat('#262a28', { roughness: 0.5, metalness: 0.3 }),
   galv: mat('#9aa09d', { roughness: 0.45, metalness: 0.6 }),
+  steel: mat('#c9ced0', { roughness: 0.25, metalness: 0.8 }),
   cover: mat('#1d1e20', { roughness: 0.55 }),
   terracotta: mat('#b5633c'),
   potBlack: mat('#2b2b2b'),
@@ -514,6 +522,9 @@ const M = {
   trunk: mat('#6b5642'),
   yellow: mat('#e8b82a'),
   orange: mat('#e98d1f'),
+  purple: mat('#6b3fa0'),
+  pink: mat('#c9588a'),
+  flowerWhite: mat('#f4f1ea'),
   planterGreen: mat('#2f6f63', { roughness: 0.6 }),
   gravel: mat('#e3e0d8', { roughness: 1 }),
   field: mat('#9fb872', { roughness: 1 }),
@@ -534,24 +545,29 @@ const FH = L.fenceHeight;
   ground.rotation.x = -Math.PI / 2; ground.position.set(4, -0.01, 0); ground.receiveShadow = true;
   G.context.add(ground);
 
-  const t = L.terrace, p = L.path, b = L.bed, ln = L.lawn, bp = L.binPad, fb = L.border;
+  const t = L.terrace, p = L.path, b = L.bed, ln = L.lawn, ba = L.binArea, fb = L.border, dr = L.lineDrain;
   const terrace = item(s, 'Terrace', `${t.tilesX} × ${t.tilesZ} ceramic tiles of 60 × 60 cm = ${m2(t.x1 - t.x0)} × ${m2(t.z1 - t.z0)} m (measured). Main seating area and the spot for the pergola.`);
   box(terrace, t.x0, t.x1, 0, 0.05, t.z0, t.z1, M.tiles, { cast: false });
-  box(terrace, ln.x0, t.x1, 0.05, 0.058, t.z1 - 0.1, t.z1, M.darkMetal, { cast: false });             // line drain
+  box(terrace, t.x1 - 0.45, t.x1 - 0.3, 0.05, 0.053, 0.2, 0.35, M.steel, { cast: false });          // floor gully by the hose reel
+  const drain = item(s, 'Line drain', `Stainless steel line drain, ${fmt((dr.z1 - dr.z0) * 100)} cm wide (measured), against the uncut outer row of tiles; concrete edge behind it.`);
+  box(drain, dr.x0, dr.x1, 0, 0.05, dr.z0, dr.z1, M.steel, { cast: false });
+  for (let x = dr.x0 + 0.05; x < dr.x1 - 0.05; x += 0.1) box(drain, x, x + 0.06, 0.05, 0.052, dr.z0 + 0.015, dr.z1 - 0.015, M.darkMetal, { cast: false });  // slots
+  box(drain, dr.x0, dr.x1, 0, 0.04, dr.z1, ln.z0, M.concrete, { cast: false });
   const pebbles = item(s, 'Pebble strip', `White pebbles in the ${fmt(L.pebbleGap * 100)} cm gap between the wall/doors and the tiles (measured).`);
   box(pebbles, t.x0, t.x1, 0, 0.042, 0, t.z0, M.gravel, { cast: false });
-  const path = item(s, 'Garden path', 'Dark clinker pavers from the terrace to the back gate (width estimated).');
+  const path = item(s, 'Garden path', `Dark clinker pavers from the side door past the terrace to the back gate, ${m2(p.x1 - p.x0)} m wide (measured).`);
   box(path, p.x0, p.x1, 0, 0.045, p.z0, p.z1, M.pavers, { cast: false });
-  const pad = item(s, 'Bin pad', 'Concrete slabs for the bins next to the gate.');
-  box(pad, bp.x0, bp.x1, 0, 0.045, bp.z0, bp.z1, mat('#a8a69f'), { cast: false });
-  const lawn = item(s, 'Lawn', 'Grass, with a narrow border strip along the fences (size estimated).');
+  const binArea = item(s, 'Bin area', `Paved area for the wheelie bins beside the gate: ${m2(ba.x1 - ba.x0)} m wide, ${m2(ba.z1 - ba.z0)} m deep (60 cm ceramic tiles under the bins + 70 cm pavers; measured).`);
+  box(binArea, ba.x0, ba.x1, 0, 0.045, ba.z0, ba.z1, M.pavers, { cast: false });
+  box(binArea, ba.x1 - ba.tiles * L.tile, ba.x1, 0, 0.048, ba.z1 - ba.tileDepth, ba.z1, M.tiles, { cast: false });
+  const lawn = item(s, 'Lawn', 'Grass, with a narrow border strip along the fences (depth still estimated).');
   box(lawn, ln.x0, ln.x1, 0, 0.035, ln.z0, ln.z1, M.grass, { cast: false });
   const bed = item(s, 'Planting bed', 'Soil strip along the field-side fence with the hedge, pots and sunflowers.');
   box(bed, b.x0, b.x1, 0, 0.025, b.z0, b.z1, M.soil, { cast: false });
   box(bed, ln.x1, L.width, 0, 0.025, ln.z0, L.depth, M.soil, { cast: false });                        // border at neighbour fence
   box(bed, ln.x0, ln.x1, 0, 0.025, ln.z1, L.depth, M.soil, { cast: false });                           // border at back fence
   const border = item(s, 'Plant border at fence', `${fmt((fb.x1 - fb.x0) * 100)} cm planting strip between the terrace and the neighbour fence (measured).`);
-  box(border, fb.x0, fb.x1, 0, 0.025, fb.z0, fb.z1, M.soil, { cast: false });
+  box(border, fb.x0, fb.x1, 0, 0.025, fb.z0, ln.z0, M.soil, { cast: false });
 }
 
 // ---------- house
@@ -742,22 +758,27 @@ function sunflower(parent, x, z, h) {
     if (z > 4.2) pot(veg, pa.x0 - 0.62, z + 0.2, 0.16, 0.25, pick([M.potBlack, M.terracotta]), { plant: pick(['leafy', 'flower']), plantH: 0.28 });
   }
 
+  const ba = L.binArea;
   const binPots = item(s, Z[4].name, 'Terracotta and black pots with a small stack of pavers, in front of the bins.');
-  pot(binPots, pa.x0 - 0.3, 7.6, 0.17, 0.26, M.terracotta, { plant: 'tall', plantH: 0.6 });
-  pot(binPots, pa.x0 - 0.65, 7.7, 0.18, 0.28, M.potBlack);
-  pot(binPots, pa.x0 - 0.3, 7.25, 0.15, 0.22, M.terracotta);
-  box(binPots, pa.x0 - 1.15, pa.x0 - 0.75, 0.02, 0.24, 7.3, 7.55, mat('#b9b2a4'));
+  pot(binPots, ba.x0 + 0.25, ba.z0 + 0.3, 0.17, 0.26, M.terracotta, { plant: 'tall', plantH: 0.6 });
+  pot(binPots, ba.x0 + 0.62, ba.z0 + 0.42, 0.18, 0.28, M.potBlack);
+  pot(binPots, ba.x0 + 0.6, ba.z0 + 0.15, 0.13, 0.2, M.terracotta);
+  box(binPots, ba.x0 + 0.08, ba.x0 + 0.48, 0.045, 0.26, ba.z0 + 0.03, ba.z0 + 0.28, mat('#b9b2a4'));
 
-  const sun = item(s, Z[5].name, 'Sunflowers up to ≈2.8 m in the corner by the bins.');
-  for (const [x, z, h] of [[fx + 0.35, 8.55, 2.7], [fx + 0.7, 8.2, 2.4], [fx + 0.3, 7.9, 2.2], [fx + 0.85, 8.65, 2.8], [fx + 0.6, 7.7, 2.1]]) sunflower(sun, x, z, h);
+  const sun = item(s, Z[5].name, 'Sunflowers up to ≈2.8 m between the bin area and the ivy hedge.');
+  for (const [x, z, h] of [[fx + 0.25, 8.5, 2.7], [fx + 0.45, 8.1, 2.4], [fx + 0.2, 7.7, 2.2], [fx + 0.5, 8.75, 2.8], [fx + 0.45, 7.3, 2.1], [0.55, 7.2, 2.3]]) sunflower(sun, x, z, h);
 
-  const fp = item(s, Z[6].name, 'Black rectangular planter with flowers in the 40 cm border at the neighbour fence.');
-  box(fp, fb.x0 + 0.04, fb.x1 - 0.05, 0.03, 0.5, 2.38, 2.9, M.potBlack);
-  blob(fp, (fb.x0 + fb.x1) / 2, 0.6, 2.64, 0.17, 0.15, 0.24, M.leafDark);
-  for (let i = 0; i < 5; i++) blob(fp, fb.x0 + 0.08 + rand() * 0.22, 0.72, 2.45 + rand() * 0.4, 0.04, 0.03, 0.04, M.yellow);
+  const fp = item(s, Z[6].name, 'Black square planter (≈42 cm) with violas and lemon balm on the last tile by the border.');
+  box(fp, t.x1 - 0.57, t.x1 - 0.15, 0.05, 0.47, t.z1 - 0.5, t.z1 - 0.08, M.potBlack);
+  blob(fp, t.x1 - 0.36, 0.55, t.z1 - 0.29, 0.17, 0.12, 0.17, M.leaf);
+  for (let i = 0; i < 6; i++) blob(fp, t.x1 - 0.5 + rand() * 0.28, 0.62, t.z1 - 0.45 + rand() * 0.3, 0.035, 0.025, 0.035, pick([M.yellow, M.purple]));
 
-  const bp = item(s, 'Border plants', 'Perennials in the planting strip along the neighbour fence.');
-  for (let z = 0.35; z < 2.2; z += 0.45) blob(bp, (fb.x0 + fb.x1) / 2 + (rand() - 0.5) * 0.08, 0.14, z, 0.16, 0.16 + rand() * 0.1, 0.18, pick([M.leaf, M.leafDark]));
+  const bp = item(s, 'Border plants', 'Echinacea, gaura and agastache in the 40 cm strip along the neighbour fence.');
+  for (let z = 0.35; z < 3.0; z += 0.4) {
+    const x = (fb.x0 + fb.x1) / 2 + (rand() - 0.5) * 0.08, h = 0.25 + rand() * 0.5;
+    blob(bp, x, h / 2, z, 0.15, h / 2, 0.17, pick([M.leaf, M.leafDark]));
+    for (let i = 0; i < 3; i++) blob(bp, x + (rand() - 0.5) * 0.2, h + rand() * 0.15, z + (rand() - 0.5) * 0.2, 0.035, 0.025, 0.035, pick([M.pink, M.flowerWhite]));
+  }
 
   const beds = item(s, 'In-ground plants', 'Marigolds, chard and perennials planted in the bed near the house.');
   for (let i = 0; i < 11; i++) {
@@ -770,15 +791,15 @@ function sunflower(parent, x, z, h) {
 // ---------- furniture & objects
 {
   const s = G.furniture;
-  const W = L.width, D = L.depth, bp = L.binPad;
+  const W = L.width, D = L.depth, ba = L.binArea;
   const chair = item(s, 'Lounge chair (covered)', 'Garden chair under a black cover.');
   box(chair, 5.0, 5.75, 0, 1.05, 1.95, 2.7, M.cover);
   const table = item(s, 'Side table', 'Small round side table, Ø ≈ 45 cm.');
   cyl(table, 4.6, 2.6, 0.22, 0.43, 0.46, M.potCream);
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + 0.4; cyl(table, 4.6 + Math.cos(a) * 0.15, 2.6 + Math.sin(a) * 0.15, 0.01, 0, 0.44, M.potCream, { seg: 6 }); }
   const lounge = item(s, 'Lounge set (covered)', 'L-shaped lounge sofa under a black cover.');
-  box(lounge, 6.65, 8.85, 0, 0.72, 1.75, 2.6, M.cover);
-  box(lounge, 8.05, 8.85, 0, 0.72, 0.45, 1.75, M.cover);
+  box(lounge, 6.6, L.slideDoor.x1, 0, 0.72, 1.75, 2.6, M.cover);
+  box(lounge, L.slideDoor.x1 - 0.8, L.slideDoor.x1, 0, 0.72, 0.45, 1.75, M.cover);
   const pole = item(s, 'Parasol / rotary dryer (covered)', 'Tall covered pole in a ground socket at the lawn edge.');
   cyl(pole, 8.3, 3.5, 0.05, 0, 0.9, M.darkMetal, { seg: 10 });
   cyl(pole, 8.3, 3.5, 0.17, 0.9, 3.0, M.cover, { rTop: 0.12, seg: 14 });
@@ -791,11 +812,11 @@ function sunflower(parent, x, z, h) {
   box(hutch, hx0, hx1, 0.3, 0.95, D - 0.85, D - 0.2, mat('#d9d8d2'));
   box(hutch, hx0 - 0.05, hx1 + 0.05, 0.95, 1.02, D - 0.9, D - 0.15, mat('#555a5c'));
   for (const [x, z] of [[hx0 + 0.05, D - 0.8], [hx1 - 0.05, D - 0.8], [hx0 + 0.05, D - 0.25], [hx1 - 0.05, D - 0.25]]) box(hutch, x - 0.03, x + 0.03, 0, 0.3, z - 0.03, z + 0.03, mat('#d9d8d2'));
-  const bins = item(s, 'Wheelie bins', 'Two green 240 L bins (≈0.58 × 0.73 m each; one with a blue paper lid) on the pad beside the gate.');
+  const bins = item(s, 'Wheelie bins', 'Two green 240 L bins (≈0.58 × 0.73 m each; one with a blue paper lid) on the ceramic tiles beside the gate.');
   const binBody = mat('#2f6b3a', { roughness: 0.6 });
-  for (const [x1, lid] of [[bp.x1 - 0.04, '#44604a'], [bp.x1 - 0.66, '#2f6fb3']]) {
-    box(bins, x1 - 0.58, x1, 0.04, 1.0, D - 0.8, D - 0.07, binBody);
-    box(bins, x1 - 0.6, x1 + 0.01, 1.0, 1.07, D - 0.84, D - 0.06, mat(lid, { roughness: 0.6 }));
+  for (const [x1, lid] of [[ba.x1 - 0.02, '#44604a'], [ba.x1 - 0.62, '#2f6fb3']]) {
+    box(bins, x1 - 0.58, x1, 0.05, 1.0, D - 0.78, D - 0.05, binBody);
+    box(bins, x1 - 0.6, x1 + 0.01, 1.0, 1.07, D - 0.82, D - 0.04, mat(lid, { roughness: 0.6 }));
   }
   const reel = item(s, 'Hose reel', 'Wall-mounted hose reel near the extension corner.');
   const r = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 20), M.darkMetal);
@@ -809,7 +830,7 @@ function sunflower(parent, x, z, h) {
   const lineMat = new THREE.LineDashedMaterial({ color: 0x1f5a37, dashSize: 0.12, gapSize: 0.08 });
   for (const z of L.zones) {
     const w = z.x1 - z.x0, d = z.z1 - z.z0, y = 0.075;
-    const g = item(s, z.name + ' (spot)', `Container spot: ${m2(w)} × ${m2(d)} m, ${m2(z.z0)}–${m2(z.z1)} m from the house wall.`);
+    const g = item(s, z.name + ' (spot)', `Pot spot: ${m2(w)} × ${m2(d)} m, ${m2(z.z0)}–${m2(z.z1)} m from the house wall.`);
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), fill);
     p.rotation.x = -Math.PI / 2; p.position.set((z.x0 + z.x1) / 2, y, (z.z0 + z.z1) / 2); p.renderOrder = 2; g.add(p);
     const pts = [[z.x0, z.z0], [z.x1, z.z0], [z.x1, z.z1], [z.x0, z.z1], [z.x0, z.z0]].map(([x, zz]) => new THREE.Vector3(x, y + 0.002, zz));
@@ -833,7 +854,11 @@ function dimLine(parent, a, b, text, tickDir) {
   const s = G.labels, t = L.terrace, ln = L.lawn, p = L.path, b = L.bed, e = L.extension, fb = L.border, wl = L.wall;
   tag(s, `<b>Terrace</b><span class="m">${m2(t.x1 - t.x0)} × ${m2(t.z1 - t.z0)} m</span>`, t.x0 + 1.0, 0.12, 1.6);
   tag(s, `<b>Lawn</b><span class="m">≈${m2(ln.x1 - ln.x0)} × ${m2(ln.z1 - ln.z0)} m</span>`, (ln.x0 + ln.x1) / 2, 0.12, (ln.z0 + ln.z1) / 2);
-  tag(s, `<b>Path</b><span class="m">≈${m2(p.x1 - p.x0)} m wide</span>`, (p.x0 + p.x1) / 2, 0.12, 5.4);
+  tag(s, `<b>Path</b><span class="m">${m2(p.x1 - p.x0)} m wide</span>`, (p.x0 + p.x1) / 2, 0.12, 5.4);
+  const ba = L.binArea;
+  tag(s, `<b>Bins</b>`, (ba.x0 + ba.x1) / 2, 1.35, ba.z1 - 0.4);
+  dimLine(s, [ba.x0, 0.1, ba.z0 - 0.12], [ba.x1, 0.1, ba.z0 - 0.12], `${m2(ba.x1 - ba.x0)}`, [0, 0, 1]);
+  dimLine(s, [ba.x0 - 0.1, 0.1, ba.z0], [ba.x0 - 0.1, 0.1, ba.z1], `${m2(ba.z1 - ba.z0)}`, [1, 0, 0]);
   tag(s, `<b>Bed</b><span class="m">${m2(b.x1 - b.x0)} m</span>`, 0.8, 0.12, 5.0);
   tag(s, `<b>Gate</b>`, (L.gate.x0 + L.gate.x1) / 2, FH + 0.9, L.depth);
   // measured wall chain, just above the doors
